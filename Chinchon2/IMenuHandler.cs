@@ -2,10 +2,10 @@
 using System.Collections.Generic;
 using System.Text;
 
-namespace Chinchon2
+namespace Chinchon
 {
     public interface IMenuHandler
     {
-        public void Handle(string[] args);
+        public IResult Handle(string[] args);
     }
 }

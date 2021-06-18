@@ -1,59 +1,19 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 
-namespace Chinchon.Domain2
+namespace Chinchon.Domain
 {
     public class Player
     {
-        private readonly IList<Card> _cards;
-        private IEnumerable<Group> _groups = Enumerable.Empty<Group>();
-
-        public Player()
-        {
-            _cards = new List<Card>();
-            Points = 0;
-        }
-
-        public IEnumerable<Card> Cards => _cards;
-        public IEnumerable<Group> Groups => _groups;
-
+        public int Id { get; private set; }
+        public string Name { get; private set; } = "";
         public int Points { get; private set; }
+        public IEnumerable<Card> Cards { get; private set; } = Enumerable.Empty<Card>();
 
-        public void SetCardAtPosition(int cardInHandPosition, Card card)
+        public Player(int id, string name)
         {
-            _cards[cardInHandPosition] = card;
-        }
-
-        public Card GetCardAtPosition(int position)
-        {
-            return _cards[position];
-        }
-
-        public void AddPoints(int amount)
-        {
-            Points = amount;
-        }
-
-        public int CalculatePoints()
-        {
-            return Points;
-        }
-
-        internal void RemoveCard(Card card)
-        {
-            _cards.Remove(card);
-        }
-
-        public void AddCard(Card card)
-        {
-            _cards.Add(card);
-        }
-
-        public void SetGroups(IEnumerable<Group> otherGroups)
-        {
-            _groups = otherGroups;
+            Id = id;
+            Name = name;
         }
     }
 }

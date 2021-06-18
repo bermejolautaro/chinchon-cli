@@ -1,20 +1,28 @@
-﻿using System;
+﻿using Chinchon.Domain;
+using Chinchon.GameHandlers;
+using Chinchon.MenuHandlers;
+using ExhaustiveMatching;
+using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Text;
 
-namespace Chinchon2
+namespace Chinchon
 {
-    class Program
+    public class Program
     {
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
-            var startHandler = new StartHandler();
+            var path = $"./saves/chinchon-{Guid.NewGuid()}.txt";
+            var random = new Random();
+            var startHandler = new StartHandler(random);
             var seeHandler = new SeeHandler();
             var pickCardFromDeckHandler = new PickCardFromDeckHandler();
             var pickCardFromPileHandler = new PickCardFromPileHandler();
             var discardCardHandler = new DiscardCardHandler();
-            var cutHandler = new CutHandler();
+            var cutHandler = new CutHandler(random);
             var swapHandler = new SwapHandler();
+            var moveHandler = new MoveHandler();
 
             var handlersByMenuCommand = new Dictionary<string, IMenuHandler>()
             {
@@ -31,31 +39,93 @@ namespace Chinchon2
                 ["discardCard"] = discardCardHandler,
                 ["dc"] = discardCardHandler,
                 ["cut"] = cutHandler,
-                ["swap"] = swapHandler
+                ["swap"] = swapHandler,
+                ["move"] = moveHandler,
+                ["mv"] = moveHandler
             };
 
             if (handlersByMenuCommand.ContainsKey(args[0]))
             {
-                handlersByMenuCommand[args[0]].Handle(args);
+                var response = handlersByMenuCommand[args[0]].Handle(args);
+
+                switch (response)
+                {
+                    case SuccessResult action:
+                        {
+                            SaveGameState(path, action.GameState);
+                            break;
+                        }
+                    case ErrorResult action:
+                        {
+                            Console.Write(action.ErrorMessage);
+                            break;
+                        }
+                    default: throw ExhaustiveMatch.Failed(response);
+                }
+
                 return;
             }
-            else if (handlersByGameCommand.ContainsKey(args[0]))
+            else if (handlersByGameCommand.ContainsKey(args[1]))
             {
-                using StreamReader sr = File.OpenText(IOGameService.path);
-                GameState gameState = GameService.DeserializeGameState(sr);
+                using var sr = File.OpenText($"saves\\{args[0]}.txt");
+                GameState gameState = GameService.DeserializeGameState(ReadGameState(sr));
 
-                if (!string.IsNullOrEmpty(gameState.Winner))
+                var response = handlersByGameCommand[args[1]].Handle(args, gameState);
+
+                switch (response.Action)
                 {
-                    Console.WriteLine($"This game has already ended. The winner is: {gameState.Winner}");
-                }
-                else
-                {
-                    handlersByGameCommand[args[0]].Handle(args, gameState);
+                    case SaveAction action:
+                        {
+                            SaveGameState(path, action.GameState);
+                            break;
+                        }
+                    case WriteAction action:
+                        {
+                            Console.Write(action.Output);
+                            break;
+                        }
+                    case NothingAction _:
+                        { break; }
+                    default: throw ExhaustiveMatch.Failed(response.Action);
                 }
             }
             else
             {
                 Console.WriteLine("Invalid command");
+            }
+        }
+
+        private static string ReadGameState(StreamReader sr)
+        {
+            var serializedGameStateBuilder = new StringBuilder();
+
+            while (true)
+            {
+                string? line = sr.ReadLine();
+
+                if (line == null)
+                {
+                    break;
+                }
+
+                serializedGameStateBuilder.AppendLine(line);
+            }
+
+            return serializedGameStateBuilder.ToString();
+        }
+
+        private static void SaveGameState(string path, GameState gameState)
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                using StreamWriter fs = File.CreateText(path);
+                fs.Write(gameState.SerializeGameState());
+                fs.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
             }
         }
     }

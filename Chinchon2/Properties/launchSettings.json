@@ -1,8 +1,8 @@
 {
   "profiles": {
-    "Chinchon2": {
+    "Chinchon": {
       "commandName": "Project",
-      "commandLineArgs": "cut 1;2;3;4;5;6;7 8"
+      "commandLineArgs": "see chinchon-4a62f782-28b6-4698-aeea-36f937759cb3"
     }
   }
 }

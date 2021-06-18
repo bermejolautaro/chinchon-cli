@@ -1,0 +1,30 @@
+﻿<Window x:Class="Chinchon.SimpleGUI.MainWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:Chinchon.SimpleGUI"
+        mc:Ignorable="d"
+        Title="Chinchon" Height="450" Width="800">
+    <Grid>
+        <Button Content="Start" HorizontalAlignment="Left" Margin="355,22,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="Start_Click"/>
+        <Button Content="Pick Card From Deck" HorizontalAlignment="Left" Margin="355,57,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="PickCardFromDeck_Click"/>
+        <Button Content="Pick Card From Pile" HorizontalAlignment="Left" Margin="355,92,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="PickCardFromPile_Click"/>
+        <Button Content="Discard Card" HorizontalAlignment="Left" Margin="355,127,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="DiscardCard_Click"/>
+        <Button Content="Cut" HorizontalAlignment="Left" Margin="355,162,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="Cut_Click"/>
+        <Button Content="Move Up" HorizontalAlignment="Left" Margin="355,197,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="MoveUp_Click"/>
+        <Button Content="Move Down" HorizontalAlignment="Left" Margin="355,232,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="MoveDown_Click"/>
+        <Button Content="Submit First Group" HorizontalAlignment="Left" Margin="355,267,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="SubmitFirstGroup_Click"/>
+        <Button Content="Submit Second Group" HorizontalAlignment="Left" Margin="355,302,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="SubmitSecondGroup_Click"/>
+        <Button Content="Submit Card to Cut With" HorizontalAlignment="Left" Margin="355,337,0,0" VerticalAlignment="Top" Height="30" Width="200" Click="SubmitCardToCutWith_Click"/>
+
+        <TextBlock x:Name="PlayerNameTextBlock" HorizontalAlignment="Left" Margin="15,15,0,0" Text="Player Name" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBlock x:Name="PlayerPointsTextBlock" HorizontalAlignment="Left" Margin="15,35,0,0" Text="Points: 0" TextWrapping="Wrap" VerticalAlignment="Top"/>
+
+        <ListBox x:Name="CardsListBox" Margin="15,60,650,176" SelectionMode="Multiple"/>
+        <TextBlock x:Name="PileTextBlock" HorizontalAlignment="Left" Margin="15,277,0,0" Text="Pile: (Suit, Rank)" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBlock x:Name="FirstGroupTextBlock" HorizontalAlignment="Left" Margin="15,297,0,0" Text="First Group: (Suit, Rank)" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBlock x:Name="SecondGroupTextBlock" HorizontalAlignment="Left" Margin="15,317,0,0" Text="Second Group: (Suit, Rank)" TextWrapping="Wrap" VerticalAlignment="Top"/>
+        <TextBlock x:Name="CardToCutWithTextBlock" HorizontalAlignment="Left" Margin="15,337,0,0" Text="Card to cut with: (Suit, Rank)" TextWrapping="Wrap" VerticalAlignment="Top"/>
+    </Grid>
+</Window>

@@ -1,11 +1,12 @@
-﻿using System;
+﻿using Chinchon.Domain;
+using System;
 using System.Collections.Generic;
 using System.Text;
 
-namespace Chinchon2
+namespace Chinchon
 {
     public interface IGameHandler
     {
-        public void Handle(string[] args, GameState gameState);
+        public HandlerResponse Handle(string[] args, GameState gameState);
     }
 }

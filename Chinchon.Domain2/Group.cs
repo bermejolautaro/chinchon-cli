@@ -1,33 +1,58 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 
-namespace Chinchon.Domain2
+namespace Chinchon.Domain
 {
-    public class Group
+    public class Group : IEnumerable<Card>
     {
 
-        public Group(IEnumerable<Card> cards)
+        private Group(IEnumerable<Card> cards)
         {
             Cards = cards;
         }
 
         public IEnumerable<Card> Cards { get; }
 
-        public bool IsSubsetOf(IEnumerable<Card> cards)
+        public bool IsChinchon()
         {
-            return new HashSet<Card>(Cards).IsSubsetOf(new HashSet<Card>(cards));
+            return IsChinchon(Cards);
         }
 
-        public bool Contains(Card card)
+        public IEnumerator<Card> GetEnumerator()
         {
-            return Cards.Contains(card);
+            return Cards.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return Cards.GetEnumerator();
+        }
+
+        public static Group CreateGroup(IEnumerable<Card> cards)
+        {
+            if(!IsValidGroup(cards))
+            {
+                throw new ArgumentException(nameof(cards));
+            }
+
+            return new Group(cards);
+        }
+
+        public static bool TryCreateGroup(IEnumerable<Card> cards, out Group group)
+        {
+            group = new Group(cards);
+            return IsValidGroup(cards);
         }
 
         public static bool IsValidGroup(IEnumerable<Card> cards)
         {
-            if (cards.Count() < 3)
+            if (cards.Count() < 3 || cards.Count() > 7)
+                return false;
+
+            if (cards.Count() != cards.Distinct().Count())
                 return false;
 
             return IsValidGroupOfThree(cards) || IsValidGroupOfFour(cards) || IsValidStraight(cards);
@@ -62,12 +87,12 @@ namespace Chinchon.Domain2
             if (cardsCopy.Any(c => c.Suit != cardsCopy[0].Suit))
                 return false;
 
-            var sortedCards = cardsCopy.OrderBy(c => int.Parse(c.Rank));
+            var sortedCards = cardsCopy.OrderBy(c => c.RankValue);
             var lastCard = sortedCards.First();
 
             foreach (var card in sortedCards.Skip(1))
             {
-                if (int.Parse(lastCard.Rank) != int.Parse(card.Rank) - 1)
+                if (lastCard.RankValue != card.RankValue - 1)
                 {
                     return false;
                 }
@@ -83,12 +108,12 @@ namespace Chinchon.Domain2
             return IsValidStraight(cards) && cards.Count() == 7;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
             if (!(obj is Group group))
                 return false;
 
-            return new HashSet<Card>(Cards).SetEquals(new HashSet<Card>(group.Cards));
+            return new HashSet<Card>(Cards).SetEquals(new HashSet<Card>(group));
         }
 
         public override int GetHashCode()
@@ -98,7 +123,7 @@ namespace Chinchon.Domain2
 
         public override string ToString()
         {
-            return $"[{string.Join(", ", Cards)}]";
+            return $"[{string.Join(", ", Cards.Select(x => x.ToString()))}]";
         }
     }
 }
