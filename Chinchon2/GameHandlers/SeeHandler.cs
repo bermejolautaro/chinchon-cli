@@ -8,21 +8,21 @@ namespace Chinchon.GameHandlers
 {
     public class SeeHandler : IGameHandler
     {
-        private static readonly Dictionary<string, Func<GameState, string>> _handlersByCommand = new Dictionary<string, Func<GameState, string>>()
+        private static readonly Dictionary<string, Func<GameState, ApplicationState, string>> _handlersByCommand = new Dictionary<string, Func<GameState, ApplicationState, string>>()
         {
             ["current"] = SeeCurrentPlayer,
             ["c"] = SeeCurrentPlayer
         };
 
-        public HandlerResponse Handle(string[] args, GameState gameState)
+        public HandlerResponse Handle(string[] args, GameState gameState, ApplicationState appState)
         {
             if (args.Length == 1)
             {
                 StringBuilder sb = new StringBuilder();
-                sb.AppendLine("Player 1");
-                sb.AppendLine($"Points: {gameState.Player1Points}");
+                sb.AppendLine(appState.Player1Name);
+                sb.AppendLine($"Points: {gameState.Player1.Points}");
 
-                foreach (var card in gameState.Player1Cards)
+                foreach (var card in gameState.Player1.Cards)
                 {
                     sb.AppendLine(card.ToString());
                 }
@@ -30,10 +30,10 @@ namespace Chinchon.GameHandlers
                 sb.AppendLine();
                 sb.AppendLine();
 
-                sb.AppendLine("Player 2");
-                sb.AppendLine($"Points: {gameState.Player2Points}");
+                sb.AppendLine(appState.Player2Name);
+                sb.AppendLine($"Points: {gameState.Player2.Points}");
 
-                foreach (var card in gameState.Player2Cards)
+                foreach (var card in gameState.Player2.Cards)
                 {
                     sb.AppendLine(card.ToString());
                 }
@@ -45,7 +45,7 @@ namespace Chinchon.GameHandlers
             }
             else
             {
-                var output = _handlersByCommand[args[2]].Invoke(gameState);
+                var output = _handlersByCommand[args[1]].Invoke(gameState, appState);
 
                 return new HandlerResponse()
                 {
@@ -54,23 +54,16 @@ namespace Chinchon.GameHandlers
             }
         }
 
-        private static string SeeCurrentPlayer(GameState gameState)
+        private static string SeeCurrentPlayer(GameState gameState, ApplicationState appState)
         {
             var sb = new StringBuilder();
-            if (gameState.PlayerTurn == 1)
-            {
-                sb.AppendLine("Player 1");
-                sb.AppendLine($"Points: {gameState.Player1Points}");
-            }
-            else
-            {
-                sb.AppendLine("Player 2");
-                sb.AppendLine($"Points: {gameState.Player2Points}");
-            }
+
+            sb.AppendLine(appState.GetPlayerNameById(gameState.GetCurrentPlayer().Id));
+            sb.AppendLine($"Points: {gameState.GetCurrentPlayer().Points}");
 
             sb.AppendLine($"Pile: {gameState.Pile.FirstOrDefault()}");
 
-            var cards = gameState.GetCurrentPlayerCards().ToList();
+            var cards = gameState.GetCurrentPlayer().Cards.ToList();
 
             for (int i = 0; i < cards.Count(); i++)
             {

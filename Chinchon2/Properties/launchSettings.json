@@ -1,8 +1,8 @@
 {
   "profiles": {
-    "Chinchon": {
+    "Chinchon.CLI": {
       "commandName": "Project",
-      "commandLineArgs": "see chinchon-4a62f782-28b6-4698-aeea-36f937759cb3"
+      "commandLineArgs": "start"
     }
   }
 }

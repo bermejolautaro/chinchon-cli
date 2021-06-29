@@ -13,12 +13,18 @@ namespace Chinchon.Tests
         {
             var expectedOutput = "Only can discard cards when you have eight cards in your hand";
             var discardCardHandler = new DiscardCardHandler();
-            var gameState = new GameState()
+            var gameState = new GameState(new Player(1), new Player(2));
+
+            gameState = gameState.With(stateOptions =>
             {
-                PlayerTurn = 1,
-                Player1Cards = CardsService.GetCards().Take(7)
-            };
-            var response = discardCardHandler.Handle(new string[] { "discardCard", "1" }, gameState);
+                stateOptions.PlayerTurn = 1;
+                stateOptions.Player1 = gameState.Player1.With(options =>
+                {
+                    options.Cards = CardsService.GetCards().Take(7);
+                });
+            });
+
+            var response = discardCardHandler.Handle(new string[] { "discardCard", "1" }, gameState, new ApplicationState());
 
             ((WriteAction)response.Action).Output.ShouldBe(expectedOutput);
         }
@@ -28,12 +34,17 @@ namespace Chinchon.Tests
         {
             var expectedOutput = "Invalid input";
             var discardCardHandler = new DiscardCardHandler();
-            var gameState = new GameState()
+            var gameState = new GameState(new Player(1), new Player(2));
+
+            gameState = gameState.With(stateOptions =>
             {
-                PlayerTurn = 1,
-                Player1Cards = CardsService.GetCards().Take(8)
-            };
-            var response = discardCardHandler.Handle(new string[] { "discardCard", "uno" }, gameState);
+                stateOptions.PlayerTurn = 1;
+                stateOptions.Player1 = gameState.Player1.With(options =>
+                {
+                    options.Cards = CardsService.GetCards().Take(8);
+                });
+            });
+            var response = discardCardHandler.Handle(new string[] { "discardCard", "uno" }, gameState, new ApplicationState());
 
             ((WriteAction)response.Action).Output.ShouldBe(expectedOutput);
         }
@@ -43,12 +54,18 @@ namespace Chinchon.Tests
         {
             var expectedOutput = "Invalid index";
             var discardCardHandler = new DiscardCardHandler();
-            var gameState = new GameState()
+            var gameState = new GameState(new Player(1), new Player(2));
+
+            gameState = gameState.With(stateOptions =>
             {
-                PlayerTurn = 1,
-                Player1Cards = CardsService.GetCards().Take(8)
-            };
-            var response = discardCardHandler.Handle(new string[] { "discardCard", "0" }, gameState);
+                stateOptions.PlayerTurn = 1;
+                stateOptions.Player1 = gameState.Player1.With(options =>
+                {
+                    options.Cards = CardsService.GetCards().Take(8);
+                });
+            });
+
+            var response = discardCardHandler.Handle(new string[] { "discardCard", "0" }, gameState, new ApplicationState());
 
             ((WriteAction)response.Action).Output.ShouldBe(expectedOutput);
         }

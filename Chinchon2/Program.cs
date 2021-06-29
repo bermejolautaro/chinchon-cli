@@ -2,8 +2,10 @@
 using Chinchon.GameHandlers;
 using Chinchon.MenuHandlers;
 using ExhaustiveMatching;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
+using System.Configuration;
 using System.IO;
 using System.Text;
 
@@ -13,20 +15,20 @@ namespace Chinchon
     {
         public static void Main(string[] args)
         {
-            var path = $"./saves/chinchon-{Guid.NewGuid()}.txt";
             var random = new Random();
             var startHandler = new StartHandler(random);
+            var loadHandler = new LoadHandler();
             var seeHandler = new SeeHandler();
             var pickCardFromDeckHandler = new PickCardFromDeckHandler();
             var pickCardFromPileHandler = new PickCardFromPileHandler();
             var discardCardHandler = new DiscardCardHandler();
             var cutHandler = new CutHandler(random);
-            var swapHandler = new SwapHandler();
             var moveHandler = new MoveHandler();
 
             var handlersByMenuCommand = new Dictionary<string, IMenuHandler>()
             {
                 ["start"] = startHandler,
+                ["load"] = loadHandler
             };
 
             var handlersByGameCommand = new Dictionary<string, IGameHandler>()
@@ -39,7 +41,6 @@ namespace Chinchon
                 ["discardCard"] = discardCardHandler,
                 ["dc"] = discardCardHandler,
                 ["cut"] = cutHandler,
-                ["swap"] = swapHandler,
                 ["move"] = moveHandler,
                 ["mv"] = moveHandler
             };
@@ -48,37 +49,82 @@ namespace Chinchon
             {
                 var response = handlersByMenuCommand[args[0]].Handle(args);
 
-                switch (response)
+                switch (response.Action)
                 {
-                    case SuccessResult action:
+                    case SaveStateAction action:
                         {
-                            SaveGameState(path, action.GameState);
+                            var guid = Guid.NewGuid();
+                            SaveConfiguration(guid);
+                            SaveGameState(GetGameStatePath(guid), action.GameState);
+                            SaveAppState(GetAppStatePath(guid), action.AppState);
                             break;
                         }
-                    case ErrorResult action:
+                    case SaveConfigurationAction action:
                         {
-                            Console.Write(action.ErrorMessage);
+                            SaveConfiguration(action.GameGuid);
                             break;
                         }
+                    case WriteAction action:
+                        {
+                            Console.Write(action.Output);
+                            break;
+                        }
+                    case NothingAction _:
+                        { break; }
+
                     default: throw ExhaustiveMatch.Failed(response);
                 }
 
                 return;
             }
-            else if (handlersByGameCommand.ContainsKey(args[1]))
+            else if (handlersByGameCommand.ContainsKey(args[0]))
             {
-                using var sr = File.OpenText($"saves\\{args[0]}.txt");
-                GameState gameState = GameService.DeserializeGameState(ReadGameState(sr));
+                var lastLoadedGameGuid = ReadConfiguration();
+                ApplicationState? appState = null;
+                GameState? gameState = null;
 
-                var response = handlersByGameCommand[args[1]].Handle(args, gameState);
+                try
+                {
+                    using var srAppState = File.OpenText(GetAppStatePath(lastLoadedGameGuid));
+                    using var srGameState = File.OpenText(GetGameStatePath(lastLoadedGameGuid));
+                    appState = ReadAppState(srAppState);
+                    gameState = GameService.DeserializeGameState(ReadGameState(srGameState));
+
+                    if(gameState is null || appState is null)
+                    {
+                        throw new Exception("Error trying to load state");
+                    }
+                }
+                catch(FileNotFoundException)
+                {
+                    if (lastLoadedGameGuid == Guid.Empty)
+                    {
+                        Console.WriteLine($"Empty game id. Load an existing game");
+                    }
+                    else
+                    {
+                        Console.WriteLine($"Game with id: {lastLoadedGameGuid} does not exist");
+                    }
+
+                    return;
+                }
+                catch(Exception e)
+                {
+                    Console.WriteLine(e.Message);
+                    return;
+                }
+
+                var response = handlersByGameCommand[args[0]].Handle(args, gameState, appState);
 
                 switch (response.Action)
                 {
-                    case SaveAction action:
+                    case SaveStateAction action:
                         {
-                            SaveGameState(path, action.GameState);
+                            SaveGameState(GetGameStatePath(lastLoadedGameGuid), action.GameState);
                             break;
                         }
+                    case SaveConfigurationAction _:
+                        { break; }
                     case WriteAction action:
                         {
                             Console.Write(action.Output);
@@ -93,6 +139,68 @@ namespace Chinchon
             {
                 Console.WriteLine("Invalid command");
             }
+        }
+
+        private static Guid ReadConfiguration()
+        {
+            var lastGameLoadedGuid = new Guid(ConfigurationManager.AppSettings["LastLoadedGameGuid"]);
+
+            return lastGameLoadedGuid;
+        }
+
+        private static ApplicationState ReadAppState(StreamReader sr)
+        {
+            var serializedAppStateBuilder = new StringBuilder();
+
+            while (true)
+            {
+                string? line = sr.ReadLine();
+
+                if (line == null)
+                {
+                    break;
+                }
+
+                serializedAppStateBuilder.AppendLine(line);
+            }
+
+            return JsonConvert.DeserializeObject<ApplicationState>(serializedAppStateBuilder.ToString())!;
+        }
+
+        private static void SaveAppState(string path, ApplicationState appState)
+        {
+            try
+            {
+                Directory.CreateDirectory(Path.GetDirectoryName(path));
+                using StreamWriter fs = File.CreateText(path);
+                fs.Write(appState.ToString());
+                fs.Close();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine(ex.ToString());
+            }
+        }
+
+        private static void SaveConfiguration(Guid guid)
+        {
+            var configFile = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            var settings = configFile.AppSettings.Settings;
+
+            settings["LastLoadedGameGuid"].Value = guid.ToString();
+
+            configFile.Save(ConfigurationSaveMode.Modified);
+            ConfigurationManager.RefreshSection(configFile.AppSettings.SectionInformation.Name);
+        }
+
+        private static string GetGameStatePath(Guid gameGuid)
+        {
+            return $"./saves/{gameGuid}.game.txt";
+        }
+
+        private static string GetAppStatePath(Guid gameGuid)
+        {
+            return $"./saves/{gameGuid}.app.txt";
         }
 
         private static string ReadGameState(StreamReader sr)

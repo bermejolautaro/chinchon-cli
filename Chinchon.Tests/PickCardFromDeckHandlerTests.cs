@@ -12,13 +12,19 @@ namespace Chinchon.Tests
         public void Given_EmptyDeck_When_RunningPickCardFromDeckCommand_Then_ShowExpectedErrorMessage()
         {
             var expectedOutput = "Deck is empty";
-            var gameState = new GameState()
+            var gameState = new GameState(new Player(1), new Player(2));
+
+            gameState = gameState.With(stateOptions =>
             {
-                PlayerTurn = 1,
-                Player1Cards = CardsService.GetCards().Take(7)
-            };
+                stateOptions.PlayerTurn = 1;
+                stateOptions.Player1 = gameState.Player1.With(options =>
+                {
+                    options.Cards = CardsService.GetCards().Take(7);
+                });
+            });
+            
             var pickCardFromDeckHandler = new PickCardFromDeckHandler();
-            var response = pickCardFromDeckHandler.Handle(new[] { "pickCardFromDeck" }, gameState);
+            var response = pickCardFromDeckHandler.Handle(new[] { "pickCardFromDeck" }, gameState, new ApplicationState());
 
             (response.Action as WriteAction).Output.ShouldBe(expectedOutput);
         }
@@ -27,12 +33,13 @@ namespace Chinchon.Tests
         public void Given_PickedTurnState_When_RunningPickCardFromDeckCommand_Then_ShowExpectedErrorMessage()
         {
             var expectedOutput = "Only can pick cards when having 7 cards";
-            var gameState = new GameState()
+            var gameState = new GameState(new Player(1), new Player(2)).With(options =>
             {
-                Deck = CardsService.GetCards()
-            };
+                options.Deck = CardsService.GetCards();
+            });
+
             var pickCardFromDeckHandler = new PickCardFromDeckHandler();
-            var response = pickCardFromDeckHandler.Handle(new[] { "pickCardFromDeck" }, gameState);
+            var response = pickCardFromDeckHandler.Handle(new[] { "pickCardFromDeck" }, gameState, new ApplicationState());
 
             (response.Action as WriteAction).Output.ShouldBe(expectedOutput);
         }
@@ -43,31 +50,37 @@ namespace Chinchon.Tests
             var cards = CardsService.GetCards();
             var removeResponse = CardsService.RemoveTopCard(cards);
 
-            var expectedOutput = new GameState()
-            {
-                Hand = 1,
-                Turn = 1,
-                PlayerAmount = 2,
-                PlayerTurn = 1,
-                Player1Cards = CardsService.GetCards().Take(7).Append(removeResponse.RemovedCard),
-                Player1Points = 0,
-                Player2Cards = Enumerable.Empty<Card>(),
-                Player2Points = 0,
-                Deck = removeResponse.Cards,
-                Pile = Enumerable.Empty<Card>(),
-            };
+            var expectedState = new GameState(new Player(1), new Player(2));
 
-            var gameState = new GameState()
+            expectedState = expectedState.With(stateOptions =>
             {
-                PlayerTurn = 1,
-                Player1Cards = CardsService.GetCards().Take(7),
-                Deck = CardsService.GetCards()
-            };
+                stateOptions.Hand = 1;
+                stateOptions.Turn = 1;
+                stateOptions.PlayerTurn = 1;
+                stateOptions.Deck = removeResponse.Cards;
+                stateOptions.Player1 = expectedState.Player1.With(options =>
+                {
+                    options.Cards = CardsService.GetCards().Take(7).Append(removeResponse.RemovedCard);
+                });
+            });
+
+            var gameState = new GameState(new Player(1), new Player(2));
+
+            gameState = gameState.With(stateOptions =>
+            {
+                stateOptions.PlayerTurn = 1;
+                stateOptions.Deck = CardsService.GetCards();
+                stateOptions.Player1 = gameState.Player1.With(options =>
+                {
+                    options.Cards = CardsService.GetCards().Take(7);
+                });
+            });
+
             var pickCardFromDeckHandler = new PickCardFromDeckHandler();
-            var response = pickCardFromDeckHandler.Handle(new[] { "pickCardFromDeck" }, gameState);
+            var response = pickCardFromDeckHandler.Handle(new[] { "pickCardFromDeck" }, gameState, new ApplicationState());
 
-            var saveAction = (response.Action as SaveAction);
-            saveAction.GameState.ShouldBe(expectedOutput);
+            var saveAction = (response.Action as SaveStateAction);
+            saveAction.GameState.ShouldBe(expectedState);
         }
     }
 }

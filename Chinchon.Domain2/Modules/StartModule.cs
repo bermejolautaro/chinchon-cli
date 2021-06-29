@@ -6,24 +6,19 @@ namespace Chinchon.Domain.Modules
 {
     public static class StartModule
     {
-        public static IResult Start(Random random)
+        public static IResult Start(Random random, Player player1, Player player2)
         {
-            var player1 = new Player(0, "Lautaro");
-            var player2 = new Player(1, "Julieta");
+            return new SuccessResult(new GameState(player1, player2).ShuffleAndDealCards(random));
+        }
 
-            var initialState = new GameState()
-            {
-                Hand = 1,
-                Turn = 1,
-                PlayerAmount = 2,
-                PlayerTurn = 1,
-                Player1Points = 0,
-                Player2Points = 0,
-            }.WithRemainingPlayerToCut(-1);
+        public static IResult Start(Random random, Player player1, Player player2, Player player3)
+        {
+            return new SuccessResult(new GameState(player1, player2, player3).ShuffleAndDealCards(random));
+        }
 
-            var newGameState = GameService.ShuffleAndDealCards(initialState, random);
-
-            return new SuccessResult(newGameState);
+        public static IResult Start(Random random, Player player1, Player player2, Player player3, Player player4)
+        {
+            return new SuccessResult(new GameState(player1, player2, player3, player4).ShuffleAndDealCards(random));
         }
     }
 }

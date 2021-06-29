@@ -6,6 +6,6 @@ namespace Chinchon
 {
     public interface IMenuHandler
     {
-        public IResult Handle(string[] args);
+        public HandlerResponse Handle(string[] args);
     }
 }

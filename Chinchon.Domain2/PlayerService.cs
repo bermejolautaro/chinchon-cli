@@ -1,20 +1,20 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
 using static Chinchon.Domain.CardsService;
 
 namespace Chinchon.Domain
 {
-    public static class GameService
+    public static class PlayerService
     {
-
-        public static GameState? DeserializeGameState(string serializedGameState)
+        public static Player DeserializePlayer(string serializedPlayer)
         {
-            GameStateOptions gameStateOptions = new GameStateOptions();
-            var properties = typeof(GameStateOptions).GetProperties();
+            PlayerOptions playerOptions = new PlayerOptions();
+            var properties = typeof(PlayerOptions).GetProperties();
 
-            var lines = serializedGameState
-                .Split(Environment.NewLine)
+            var lines = serializedPlayer
+                .Split("|")
                 .Where(x => !string.IsNullOrEmpty(x));
 
             foreach (var line in lines)
@@ -24,7 +24,7 @@ namespace Chinchon.Domain
                     break;
                 }
 
-                var splittedLine = line.Split("=", 2);
+                var splittedLine = line.Split("=");
                 var key = splittedLine[0];
                 var value = splittedLine[1];
 
@@ -37,45 +37,35 @@ namespace Chinchon.Domain
 
                     if (property.PropertyType.IsAssignableFrom(typeof(string)))
                     {
-                        property.SetValue(gameStateOptions, value);
+                        property.SetValue(playerOptions, value);
                         break;
                     }
 
                     if (property.PropertyType.IsAssignableFrom(typeof(bool)))
                     {
-                        property.SetValue(gameStateOptions, bool.Parse(value));
+                        property.SetValue(playerOptions, bool.Parse(value));
                         break;
                     }
 
                     if (property.PropertyType.IsAssignableFrom(typeof(int)))
                     {
-                        property.SetValue(gameStateOptions, int.Parse(value));
+                        property.SetValue(playerOptions, int.Parse(value));
                         break;
                     }
 
                     if (property.PropertyType.IsAssignableFrom(typeof(IEnumerable<Card>)))
                     {
-                        var cards = string.IsNullOrEmpty(value)
+                        var listValue = string.IsNullOrEmpty(value)
                                 ? Enumerable.Empty<Card>()
                                 : value.Split(";").Select(x => DeserializeCard(x));
 
-                        property.SetValue(gameStateOptions, cards);
-                        break;
-                    }
-
-                    if (property.PropertyType.IsAssignableFrom(typeof(Player)))
-                    {
-                        var player = string.IsNullOrEmpty(value)
-                            ? null
-                            : PlayerService.DeserializePlayer(value);
-
-                        property.SetValue(gameStateOptions, player);
+                        property.SetValue(playerOptions, listValue);
                         break;
                     }
                 }
             }
 
-            return new GameState(gameStateOptions);
+            return new Player(playerOptions);
         }
     }
 }

@@ -1,53 +1,92 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Reflection;
 
 namespace Chinchon.Domain
 {
+    public class GameStateOptions
+    {
+        public bool? GameOver { get; set; }
+        public bool? WasCut { get; set; }
+        public int? RemainingPlayersToCut { get; set; }
+        public int? Hand { get; set; }
+        public int? Turn { get; set; }
+        public int? PlayerTurn { get; set; }
+        public IEnumerable<Card>? Deck { get; set; }
+        public IEnumerable<Card>? Pile { get; set; }
+        public Player? Player1 { get; set; } 
+        public Player? Player2 { get; set; }
+        public Player? Player3 { get; set; }
+        public Player? Player4 { get; set; }
+    }
+
     public class GameState : IEquatable<GameState>
     {
-        public bool GameOver { get; private set; }
-        public bool WasCut { get; private set; }
-        public int RemainingPlayersToCut { get; private set; } = -1;
-        public int Hand { get; set; } = 1;
-        public int Turn { get; set; } = 1;
-        public int PlayerAmount { get; set; } = 2;
-        public int PlayerTurn { get; set; } = 1;
-        public IEnumerable<Card> Player1Cards { get; set; } = Enumerable.Empty<Card>();
-        public int Player1Points { get; set; } = 0;
-        public IEnumerable<Card> Player2Cards { get; set; } = Enumerable.Empty<Card>();
-        public int Player2Points { get; set; } = 0;
-        public IEnumerable<Card> Deck { get; set; } = Enumerable.Empty<Card>();
-        public IEnumerable<Card> Pile { get; set; } = Enumerable.Empty<Card>();
-        public Player? Player1 { get; set; }
-        public Player? Player2 { get; set; }
+        public bool GameOver { get; }
+        public bool WasCut { get; }
+        public int RemainingPlayersToCut { get; } = -1;
+        public int Hand { get; } = 1;
+        public int Turn { get; } = 1;
+        public int PlayerTurn { get; } = 1;
+        public IEnumerable<Card> Deck { get; } = Enumerable.Empty<Card>();
+        public IEnumerable<Card> Pile { get; } = Enumerable.Empty<Card>();
+        public Player Player1 { get; }
+        public Player Player2 { get; }
+        public Player? Player3 { get; }
+        public Player? Player4 { get; }
 
-        //public GameState(Player player1, Player player2)
-        //{
-        //    Player1 = player1;
-        //    Player2 = player2;
-        //}
 
-        public GameState WithGameOver(bool gameOver)
+        public GameState(Player player1, Player player2)
         {
-            var newState = this.Clone();
-            newState.GameOver = gameOver;
-            return newState;
+            Player1 = player1;
+            Player2 = player2;
         }
 
-        public GameState WithWasCut(bool wasCut)
+        public GameState(Player player1, Player player2, Player player3) : this(player1, player2)
         {
-            var newState = this.Clone();
-            newState.WasCut = wasCut;
-            return newState;
+            Player1 = player1;
+            Player2 = player2;
+            Player3 = player3;
         }
 
-        public GameState WithRemainingPlayerToCut(int remainingPlayersToCut)
+        public GameState(Player player1, Player player2, Player player3, Player player4) : this(player1, player2, player3)
         {
-            var newState = this.Clone();
-            newState.RemainingPlayersToCut = remainingPlayersToCut;
-            return newState;
+            Player1 = player1;
+            Player2 = player2;
+            Player3 = player3;
+            Player4 = player4;
+        }
+
+        public GameState(GameStateOptions options)
+        {
+            GameOver = options.GameOver ?? false;
+            WasCut = options.WasCut ?? false;
+            RemainingPlayersToCut = options.RemainingPlayersToCut ?? -1;
+            Hand = options.Hand ?? 1;
+            Turn = options.Turn ?? 1;
+            PlayerTurn = options.PlayerTurn ?? 1;
+            Deck = options.Deck ?? Enumerable.Empty<Card>();
+            Pile = options.Pile ?? Enumerable.Empty<Card>();
+            Player1 = options.Player1 ?? new Player(1);
+            Player2 = options.Player2 ?? new Player(2);
+            Player3 = options.Player3;
+            Player4 = options.Player4;
+        }
+
+        internal GameState(GameState state, GameStateOptions options)
+        {
+            GameOver = options.GameOver ?? state.GameOver;
+            WasCut = options.WasCut ?? state.WasCut;
+            RemainingPlayersToCut = options.RemainingPlayersToCut ?? state.RemainingPlayersToCut;
+            Hand = options.Hand ?? state.Hand;
+            Turn = options.Turn ?? state.Turn;
+            PlayerTurn = options.PlayerTurn ?? state.PlayerTurn;
+            Deck = options.Deck ?? state.Deck;
+            Pile = options.Pile ?? state.Pile;
+            Player1 = options.Player1 ?? state.Player1;
+            Player2 = options.Player2 ?? state.Player2;
+            Player3 = options.Player3 ?? state.Player3;
+            Player4 = options.Player4 ?? state.Player4;
         }
 
         public override string? ToString()
@@ -57,12 +96,7 @@ namespace Chinchon.Domain
 
         public override bool Equals(object? obj)
         {
-            if (obj is null || obj is GameState)
-            {
-                return false;
-            }
-
-            return Equals(obj);
+            return obj is null || !(obj is GameState gameState) ? false : Equals(gameState);
         }
 
         public bool Equals(GameState other)
@@ -71,12 +105,9 @@ namespace Chinchon.Domain
                 other != null &&
                 Hand == other.Hand &&
                 Turn == other.Turn &&
-                PlayerAmount == other.PlayerAmount &&
                 PlayerTurn == other.PlayerTurn &&
-                Player1Cards.SequenceEqual(other.Player1Cards) &&
-                Player1Points == other.Player1Points &&
-                Player2Cards.SequenceEqual(other.Player2Cards) &&
-                Player2Points == other.Player2Points &&
+                Player1.Equals(other.Player1) &&
+                Player2.Equals(other.Player2) &&
                 Deck.SequenceEqual(other.Deck) &&
                 Pile.SequenceEqual(other.Pile);
         }
@@ -86,12 +117,11 @@ namespace Chinchon.Domain
             var hashCode = new HashCode();
             hashCode.Add(Hand);
             hashCode.Add(Turn);
-            hashCode.Add(PlayerAmount);
             hashCode.Add(PlayerTurn);
-            hashCode.Add(Player1Cards);
-            hashCode.Add(Player1Points);
-            hashCode.Add(Player2Cards);
-            hashCode.Add(Player2Points);
+            hashCode.Add(Player1);
+            hashCode.Add(Player2);
+            hashCode.Add(Player3);
+            hashCode.Add(Player4);
             hashCode.Add(Deck);
             hashCode.Add(Pile);
 
@@ -102,80 +132,133 @@ namespace Chinchon.Domain
 
     public static class GameStateExtensions
     {
-        public static GameState Clone(this GameState gameState)
+        public static GameState With(this GameState gameState, Action<GameStateOptions> builder)
         {
-            //GameState newGameState = new GameState(gameState.Player1, gameState.Player2);
-            GameState newGameState = new GameState();
+            var options = new GameStateOptions();
+            builder(options);
 
-
-            PropertyInfo[] properties = typeof(GameState).GetProperties();
-
-            foreach (var property in properties)
-            {
-                var propertyInfo = typeof(GameState).GetProperty(property.Name);
-
-                if (propertyInfo == null)
-                {
-                    continue;
-                }
-
-                property.SetValue(newGameState, propertyInfo.GetValue(gameState));
-            }
-
-            return newGameState;
+            return new GameState(gameState, options);
         }
 
-        public static IEnumerable<Card> GetCurrentPlayerCards(this GameState state)
+        public static IEnumerable<Player> GetPlayers(this GameState state)
         {
-            return state.PlayerTurn == 1
-                    ? state.Player1Cards
-                    : state.Player2Cards;
+            return new[] { state.Player1, state.Player2, state.Player3!, state.Player4! }.Where(x => !(x is null));
+        }
+
+        public static Player GetCurrentPlayer(this GameState state)
+        {
+            return state.PlayerTurn switch
+            {
+                1 => state.Player1!,
+                2 => state.Player2!,
+                3 => state.Player3!,
+                4 => state.Player4!
+            };
+        }
+
+        public static Player GetPlayerById(this GameState state, int playerId)
+        {
+            return playerId switch
+            {
+                1 => state.Player1!,
+                2 => state.Player2!,
+                3 => state.Player3!,
+                4 => state.Player4!
+            };
         }
 
         internal static GameState SetCurrentPlayerCards(this GameState state, IEnumerable<Card> cards)
         {
-            var cloneState = state.Clone();
-
-            if (state.PlayerTurn == 1)
+            return state.PlayerTurn switch
             {
-                cloneState.Player1Cards = cards;
-            }
-            else
-            {
-                cloneState.Player2Cards = cards;
-            }
-
-            return cloneState;
-        }
-
-        public static int GetCurrentPlayerPoints(this GameState state)
-        {
-            return state.PlayerTurn == 1
-                    ? state.Player1Points
-                    : state.Player2Points;
+                1 => state.With(stateOptions =>
+                {
+                    stateOptions.Player1 = state.Player1.With(options => options.Cards = cards);
+                }),
+                2 => state.With(stateOptions =>
+                {
+                    stateOptions.Player2 = state.Player2.With(options => options.Cards = cards);
+                }),
+                3 => state.With(stateOptions =>
+                {
+                    stateOptions.Player3 = state.Player3!.With(options => options.Cards = cards);
+                }),
+                4 => state.With(stateOptions =>
+                {
+                    stateOptions.Player4 = state.Player4!.With(options => options.Cards = cards);
+                }),
+            };
         }
 
         internal static GameState SetCurrentPlayerPoints(this GameState state, int points)
         {
-            var cloneState = state.Clone();
-
-            if (state.PlayerTurn == 1)
+            return state.PlayerTurn switch
             {
-                cloneState.Player1Points = points;
-            }
-            else
-            {
-                cloneState.Player2Points = points;
-            }
-
-            return cloneState;
+                1 => state.With(stateOptions =>
+                {
+                    stateOptions.Player1 = state.Player1.With(options => options.Points = points);
+                }),
+                2 => state.With(stateOptions =>
+                {
+                    stateOptions.Player2 = state.Player2.With(options => options.Points = points);
+                }),
+                3 => state.With(stateOptions =>
+                {
+                    stateOptions.Player3 = state.Player3!.With(options => options.Points = points);
+                }),
+                4 => state.With(stateOptions =>
+                {
+                    stateOptions.Player4 = state.Player4!.With(options => options.Points = points);
+                }),
+            };
         }
 
-        public static string GetCurrentPlayerName(this GameState state)
+
+        public static GameState ShuffleAndDealCards(this GameState state, Random random)
         {
-            return state.PlayerTurn == 1
-                    ? "Player 1"
-                    : "Player 2";
+            var deck = CardsService.ShuffleCards(random, CardsService.GetCards());
+
+            var players = new[] { state.Player1, state.Player2, state.Player3, state.Player4 }.Where(x => !(x is null));
+            var playersCards = new List<List<Card>>()
+            {
+                new List<Card>(),
+                new List<Card>(),
+                new List<Card>(),
+                new List<Card>()
+            };
+
+            for (int i = 0; i < 7; i++)
+            {
+                for (int j = 0; j < players.Count(); j++)
+                {
+                    var response = CardsService.RemoveTopCard(deck);
+                    deck = response.Cards;
+
+                    if (response.RemovedCard is null)
+                    {
+                        return state;
+                    }
+
+                    playersCards[j].Add(response.RemovedCard);
+                }
+            }
+
+            var (newDeck, removedCard, _) = CardsService.RemoveTopCard(deck);
+
+            if (removedCard is null)
+            {
+                return state;
+            }
+
+            return state.With(stateOptions =>
+            {
+                stateOptions.Player1 = state.Player1.With(options => options.Cards = playersCards[0]);
+                stateOptions.Player2 = state.Player2.With(options => options.Cards = playersCards[1]);
+                stateOptions.Player3 = state.Player3?.With(options => options.Cards = playersCards[2]);
+                stateOptions.Player4 = state.Player4?.With(options => options.Cards = playersCards[3]);
+                stateOptions.Deck = newDeck;
+                stateOptions.Pile = new[] { removedCard };
+            });
         }
 
         public static string SerializeGameState(this GameState state)
@@ -187,7 +270,8 @@ namespace Chinchon.Domain
                 if (property.PropertyType.IsAssignableFrom(typeof(IEnumerable<Card>)))
                 {
                     var cards = (IEnumerable<Card>?)property.GetValue(state);
-                    return $"{property.Name}={string.Join(";", cards.Select(c => c.ToString()))}";
+
+                    return $"{property.Name}={cards!.Serialize()}";
                 }
                 else
                 {

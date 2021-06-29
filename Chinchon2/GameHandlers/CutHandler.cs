@@ -14,24 +14,24 @@ namespace Chinchon.GameHandlers
             _random = random;
         }
 
-        public HandlerResponse Handle(string[] args, GameState gameState)
+        public HandlerResponse Handle(string[] args, GameState gameState, ApplicationState appState)
         {
-            return Cut(gameState, _random, args.Skip(1));
+            return Cut(gameState, appState, _random, args.Skip(1));
         }
 
-        public static HandlerResponse Cut(GameState gameState, Random random, IEnumerable<string> parameters)
+        public static HandlerResponse Cut(GameState gameState, ApplicationState appState, Random random, IEnumerable<string> parameters)
         {
             if (int.TryParse(parameters.LastOrDefault(), out int _))
             {
-                return CutWith8Cards(gameState, random, parameters);
+                return CutWith8Cards(gameState, appState, random, parameters);
             }
             else
             {
-                return CutWith7Cards(gameState, random, parameters);
+                return CutWith7Cards(gameState, appState, random, parameters);
             }
         }
 
-        public static HandlerResponse CutWith7Cards(GameState gameState, Random random, IEnumerable<string> groupsStrings)
+        public static HandlerResponse CutWith7Cards(GameState gameState, ApplicationState appState, Random random, IEnumerable<string> groupsStrings)
         {
             if (groupsStrings.Any(groupString => !IsValidFormat(groupString)))
             {
@@ -45,7 +45,7 @@ namespace Chinchon.GameHandlers
                 return new HandlerResponse() { Action = new WriteAction("Invalid indexes") };
             }
 
-            var cards = gameState.GetCurrentPlayerCards();
+            var cards = gameState.GetCurrentPlayer().Cards;
 
             var groupsCards = groupsIndexes.Select(groupIndexes => IndexesToCards(cards, groupIndexes));
 
@@ -58,12 +58,12 @@ namespace Chinchon.GameHandlers
 
             return Mediator.Send(new CutRequest(gameState, random, groups)) switch
             {
-                SuccessResult result => new HandlerResponse() { Action = new SaveAction(result.GameState) },
+                SuccessResult result => new HandlerResponse() { Action = new SaveStateAction(result.GameState, appState) },
                 ErrorResult result => new HandlerResponse() { Action = new WriteAction(result.ErrorMessage) },
             };
         }
 
-        public static HandlerResponse CutWith8Cards(GameState gameState, Random random, IEnumerable<string> groupsStringsAndCardToCutWith)
+        public static HandlerResponse CutWith8Cards(GameState gameState, ApplicationState appState, Random random, IEnumerable<string> groupsStringsAndCardToCutWith)
         {
             var cardToCutWithString = groupsStringsAndCardToCutWith.Last();
             var groupsStrings = groupsStringsAndCardToCutWith.SkipLast(1);
@@ -86,7 +86,7 @@ namespace Chinchon.GameHandlers
                 return new HandlerResponse() { Action = new WriteAction("Invalid indexes") };
             }
 
-            var cards = gameState.GetCurrentPlayerCards();
+            var cards = gameState.GetCurrentPlayer().Cards;
 
             var groupsCards = groupsIndexes.Select(groupIndexes => IndexesToCards(cards, groupIndexes));
 
@@ -101,7 +101,7 @@ namespace Chinchon.GameHandlers
 
             return Mediator.Send(new CutRequest(gameState, random, groups, cardToCutWith)) switch
             {
-                SuccessResult result => new HandlerResponse() { Action = new SaveAction(result.GameState) },
+                SuccessResult result => new HandlerResponse() { Action = new SaveStateAction(result.GameState, appState) },
                 ErrorResult result => new HandlerResponse() { Action = new WriteAction(result.ErrorMessage) },
             };
         }

@@ -11,9 +11,7 @@ namespace Chinchon.Domain.Modules
         {
             static GameState SetCards(IEnumerable<Card> cards, GameState gameState)
             {
-                var newGameState = gameState.Clone();
-                newGameState.Deck = cards;
-                return newGameState;
+                return gameState.With(options => options.Deck = cards);
             }
 
             return PickCard(gameState, gameState.Deck, "Deck is empty", SetCards);
@@ -23,9 +21,7 @@ namespace Chinchon.Domain.Modules
         {
             static GameState SetCards(IEnumerable<Card> cards, GameState gameState)
             {
-                var newGameState = gameState.Clone();
-                newGameState.Pile = cards;
-                return newGameState;
+                return gameState.With(options => options.Pile = cards);
             }
 
             return PickCard(gameState, gameState.Pile, "Pile is empty", SetCards);
@@ -37,7 +33,7 @@ namespace Chinchon.Domain.Modules
             string errorMessage,
             Func<IEnumerable<Card>, GameState, GameState> setCards)
         {
-            var cards = gameState.GetCurrentPlayerCards();
+            var cards = gameState.GetCurrentPlayer().Cards;
 
             if (gameState.WasCut)
             {

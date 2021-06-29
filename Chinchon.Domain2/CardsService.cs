@@ -7,6 +7,11 @@ namespace Chinchon.Domain
 {
     public static class CardsService
     {
+        public static string Serialize(this IEnumerable<Card> cards)
+        {
+            return string.Join(";", cards.Select(c => c.ToString()));
+        }
+
         public static Card DeserializeCard(string card)
         {
             var removedParentheses = string.Join("", card.Where(x => x != '(' && x != ')'));
@@ -81,5 +86,12 @@ namespace Chinchon.Domain
         public IEnumerable<Card> Cards { get; set; } = Enumerable.Empty<Card>();
         public Card? RemovedCard { get; set; } = null;
         public string ErrorMessage { get; set; } = "";
+
+        public void Deconstruct(out IEnumerable<Card> cards, out Card? removedCard, out string errorMessage)
+        {
+            cards = Cards;
+            removedCard = RemovedCard;
+            errorMessage = ErrorMessage;
+        }
     }
 }

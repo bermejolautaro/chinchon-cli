@@ -8,17 +8,22 @@ namespace Chinchon.Domain.Modules
     {
         internal static IResult Cut(GameState gameState, Random random, IEnumerable<Group> groups, Card? cardToCutWith = null)
         {
-            if (gameState.Turn <= gameState.PlayerAmount)
+            if (gameState.Turn <= gameState.GetPlayers().Count())
             {
                 return new ErrorResult("Can't cut before the second round");
             }
 
-            if(!AreAllDistinct(groups, cardToCutWith))
+            if (!PlayerHasTheseCards(gameState.GetCurrentPlayer().Cards, groups, cardToCutWith) )
+            {
+                return new ErrorResult("Can't cut with cards that you don't have in your hand");
+            }
+
+            if (!AreAllDistinct(groups, cardToCutWith))
             {
                 return new ErrorResult("Duplicated cards");
             }
 
-            var cards = gameState.GetCurrentPlayerCards();
+            var cards = gameState.GetCurrentPlayer().Cards;
 
             return (cards.Count()) switch
             {
@@ -26,6 +31,13 @@ namespace Chinchon.Domain.Modules
                 8 when !(cardToCutWith is null) => CutWith8Cards(gameState, random, groups, cardToCutWith),
                 _ => new ErrorResult("Invalid state")
             };
+        }
+
+        private static bool PlayerHasTheseCards(IEnumerable<Card> cards, IEnumerable<Group> groups, Card? cardToCutWith)
+        {
+            var allCards = groups.SelectMany(x => x).Concat(new[] { cardToCutWith }.Where(x => !(x is null))).Cast<Card>();
+
+            return new HashSet<Card>(cards.ToList()).SetEquals(new HashSet<Card>(allCards));
         }
 
         private static bool AreAllDistinct(IEnumerable<Group> groups, Card? cardToCutWith)
@@ -37,7 +49,7 @@ namespace Chinchon.Domain.Modules
 
         private static IResult CutWith7Cards(GameState gameState, Random random, IEnumerable<Group> groups)
         {
-            if(!gameState.WasCut)
+            if (!gameState.WasCut)
             {
                 return new ErrorResult("Can't cut with 7 cards before anyone cut with 8 cards");
             }
@@ -54,8 +66,8 @@ namespace Chinchon.Domain.Modules
         private static IResult CutWith7Cards(GameState gameState, Random random)
         {
             var totalPoints =
-                gameState.GetCurrentPlayerPoints() +
-                gameState.GetCurrentPlayerCards().Select(x => x.RankValue).Sum();
+                gameState.GetCurrentPlayer().Points +
+                gameState.GetCurrentPlayer().Cards.Select(x => x.RankValue).Sum();
 
             var newGameState = gameState.SetCurrentPlayerPoints(totalPoints);
 
@@ -87,12 +99,12 @@ namespace Chinchon.Domain.Modules
 
         private static IResult CutWith7CardsHelp(GameState gameState, Random random, IEnumerable<Card> linkedCards)
         {
-            var cards = gameState.GetCurrentPlayerCards();
+            var cards = gameState.GetCurrentPlayer().Cards;
 
             var card = cards.FirstOrDefault(c => !linkedCards.Contains(c));
 
             var totalPoints =
-                gameState.GetCurrentPlayerPoints() +
+                gameState.GetCurrentPlayer().Points +
                 cards.Where(c => !linkedCards.Contains(c)).Select(x => x.RankValue).Sum();
 
             gameState = gameState.SetCurrentPlayerPoints(totalPoints);
@@ -119,7 +131,10 @@ namespace Chinchon.Domain.Modules
 
             if (group.IsChinchon())
             {
-                gameState = gameState.WithGameOver(true);
+                gameState = gameState.With(options =>
+                {
+                    options.WasCut = true;
+                });
             }
 
             return CutWith8CardsHelp(gameState, random, cardToCutWith, group);
@@ -140,7 +155,7 @@ namespace Chinchon.Domain.Modules
 
         private static IResult CutWith8CardsHelp(GameState gameState, Random random, Card cardToCutWith, IEnumerable<Card> linkedCards)
         {
-            var cards = gameState.GetCurrentPlayerCards();
+            var cards = gameState.GetCurrentPlayer().Cards;
 
             var unlinkedCardValue = cards
                 .Where(c => !linkedCards.Append(cardToCutWith).Contains(c))
@@ -148,13 +163,14 @@ namespace Chinchon.Domain.Modules
                 .DefaultIfEmpty()
                 .First();
 
+            // TODO: Hacer el 5 parametrizable
             if (unlinkedCardValue > 5)
             {
                 return new ErrorResult("Unlinked card must be less than 5");
             }
 
             var totalPoints =
-                gameState.GetCurrentPlayerPoints() + unlinkedCardValue;
+                gameState.GetCurrentPlayer().Points + unlinkedCardValue;
 
             gameState = gameState.SetCurrentPlayerPoints(totalPoints);
 
@@ -163,32 +179,38 @@ namespace Chinchon.Domain.Modules
 
         private static GameState EndCut(GameState gameState, Random random)
         {
-            if (gameState.GetCurrentPlayerPoints() >= 100)
+            // TODO: Hacer el 100 parametrizable
+            if (gameState.GetCurrentPlayer().Points >= 100)
             {
-                gameState = gameState.WithGameOver(true);
+                gameState = gameState.With(options => options.WasCut = true);
             }
 
             if (gameState.RemainingPlayersToCut <= 0)
             {
-                gameState = gameState.WithRemainingPlayerToCut(gameState.PlayerAmount);
+                gameState = gameState.With(options =>
+                {
+                    options.RemainingPlayersToCut = gameState.GetPlayers().Count();
+                });
             }
 
-            gameState = gameState.WithRemainingPlayerToCut(gameState.RemainingPlayersToCut - 1);
+            gameState = gameState.With(options =>
+            {
+                options.RemainingPlayersToCut = gameState.RemainingPlayersToCut - 1;
+            });
 
             if (gameState.RemainingPlayersToCut > 0)
             {
-                gameState.PlayerTurn = gameState.PlayerTurn % gameState.PlayerAmount + 1;
-                gameState.Turn++;
-                gameState = gameState.WithWasCut(true);
-                return gameState.Clone();
+                gameState = gameState.With(options => options.PlayerTurn = gameState.PlayerTurn % gameState.GetPlayers().Count() + 1);
+                gameState = gameState.With(options => options.Turn = gameState.Turn + 1);
+                return gameState.With(options => options.WasCut = true);
             }
             else
             {
-                gameState.Turn = 1;
-                gameState.Hand++;
-                gameState.PlayerTurn = (gameState.Hand - 1) % gameState.PlayerAmount + 1;
-                gameState = gameState.WithWasCut(true);
-                return GameService.ShuffleAndDealCards(gameState, random);
+                gameState = gameState.With(options => options.Turn = 1);
+                gameState = gameState.With(options => options.Hand = gameState.Hand + 1);
+                gameState = gameState.With(options => options.PlayerTurn = (gameState.Hand - 1) % gameState.GetPlayers().Count() + 1);
+                gameState = gameState.With(options => options.WasCut = false);
+                return gameState.ShuffleAndDealCards(random);
             }
         }
     }

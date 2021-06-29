@@ -14,7 +14,7 @@ namespace Chinchon.Domain.Modules
                 return new ErrorResult("Invalid index");
             }
 
-            var cards = gameState.GetCurrentPlayerCards().ToList();
+            var cards = gameState.GetCurrentPlayer().Cards.ToList();
 
             cards.Remove(card);
             cards.Insert(toPosition - 1, card);

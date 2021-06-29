@@ -12,24 +12,28 @@ namespace Chinchon.Tests
         public void Given_NewGame_When_Started_Then_ShouldBeInitializedWithCorrectValues()
         {
             var seed = 0;
-            var expectedState = new GameState()
+            var expectedGameState = new GameState(new Player(1), new Player(2)).With(options =>
             {
-                Hand = 1,
-                Turn = 1,
-                PlayerAmount = 2,
-                PlayerTurn = 1,
-                Player1Points = 0,
-                Player2Points = 0,
+                options.Hand = 1;
+                options.Turn = 1;
+                options.PlayerTurn = 1;
+            });
+
+            var expectedAppState = new ApplicationState()
+            {
+                Player1Name = "Lautaro",
+                Player2Name = "Julieta"
             };
 
-            expectedState = GameService.ShuffleAndDealCards(expectedState, new Random(seed));
+            expectedGameState = expectedGameState.ShuffleAndDealCards(new Random(seed));
 
             var startHandler = new StartHandler(new Random(seed));
-            var result = startHandler.Handle(new string[0]);
+            var result = startHandler.Handle(new string[] { "start", "Lautaro", "Julieta" });
 
-            var saveAction = (SuccessResult)result;
-            saveAction.GameState.ShouldBe(expectedState);
-            saveAction.ShouldBeOfType(typeof(SuccessResult));
+            var saveAction = (SaveStateAction) result.Action;
+            saveAction.GameState.ShouldBe(expectedGameState);
+            saveAction.AppState.ShouldBe(expectedAppState);
+            saveAction.ShouldBeOfType(typeof(SaveStateAction));
         }
     }
 }

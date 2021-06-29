@@ -7,7 +7,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Chinchon2\Chinchon.csproj" />
+    <ProjectReference Include="..\Chinchon2\Chinchon.CLI.csproj" />
   </ItemGroup>
 
 </Project>

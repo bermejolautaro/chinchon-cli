@@ -6,7 +6,7 @@ namespace Chinchon.Domain.Modules
     {
         internal static IResult DiscardCard(GameState gameState, Card cardToDiscard)
         {
-            var playerCards = gameState.GetCurrentPlayerCards();
+            var playerCards = gameState.GetCurrentPlayer().Cards;
 
             if (playerCards.Count() != 8)
             {
@@ -21,9 +21,9 @@ namespace Chinchon.Domain.Modules
             }
 
             gameState = gameState.SetCurrentPlayerCards(playerCards.Where(c => c != selectedCard));
-            gameState.Pile = gameState.Pile.Prepend(selectedCard);
-            gameState.PlayerTurn = gameState.PlayerTurn % gameState.PlayerAmount + 1;
-            gameState.Turn++;
+            gameState = gameState.With(options => options.Pile = gameState.Pile.Prepend(selectedCard));
+            gameState = gameState.With(options => options.PlayerTurn = gameState.PlayerTurn % gameState.GetPlayers().Count() + 1);
+            gameState = gameState.With(options => options.Turn = gameState.Turn + 1);
 
             return new SuccessResult(gameState);
         }

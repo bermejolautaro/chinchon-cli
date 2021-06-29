@@ -2,6 +2,7 @@
 using Chinchon.Domain.Modules;
 using ExhaustiveMatching;
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
@@ -17,6 +18,12 @@ namespace Chinchon.SimpleGUI
     {
         private readonly string _path;
         private readonly Random _random;
+
+        private readonly IDictionary<int, string> _namesByPlayerId = new Dictionary<int, string>()
+        {
+            [1] = "Lautaro",
+            [2] = "Julieta"
+        };
 
         private int _lastSelectedIndex;
         private Group _firstGroup;
@@ -39,7 +46,7 @@ namespace Chinchon.SimpleGUI
 
         private void Start_Click(object sender, RoutedEventArgs e)
         {
-            HandleResponse(StartModule.Start(_random));
+            HandleResponse(StartModule.Start(_random, new Player(1), new Player(2)));
         }
 
         private void PickCardFromDeck_Click(object sender, RoutedEventArgs e)
@@ -66,7 +73,7 @@ namespace Chinchon.SimpleGUI
             }
             else
             {
-                var card = (Card) CardsListBox.Items.GetItemAt(CardsListBox.SelectedIndex + 1);
+                var card = (Card) CardsListBox.Items.GetItemAt(CardsListBox.SelectedIndex);
                 HandleResponse(Mediator.Send(new DiscardCardRequest(gameState, card)));
             }
         }
@@ -220,14 +227,14 @@ namespace Chinchon.SimpleGUI
         {
             CardsListBox.Items.Clear();
 
-            PlayerNameTextBlock.Text = gameState.GetCurrentPlayerName();
-            PlayerPointsTextBlock.Text = $"Points: {gameState.GetCurrentPlayerPoints()}";
+            PlayerNameTextBlock.Text = _namesByPlayerId[gameState.GetCurrentPlayer().Id];
+            PlayerPointsTextBlock.Text = $"Points: {gameState.GetCurrentPlayer().Points}";
             PileTextBlock.Text = $"Pile: {gameState.Pile.FirstOrDefault()}";
             FirstGroupTextBlock.Text = $"First Group: {_firstGroup?.ToString()}";
             SecondGroupTextBlock.Text = $"Second Group: {_secondGroup?.ToString()}";
             CardToCutWithTextBlock.Text = $"Card to Cut With: {_cardToCutWith?.ToString()}";
 
-            foreach (var card in gameState.GetCurrentPlayerCards())
+            foreach (var card in gameState.GetCurrentPlayer().Cards)
             {
                 CardsListBox.Items.Add(card);
             }
@@ -275,8 +282,7 @@ namespace Chinchon.SimpleGUI
             }
             catch (Exception ex)
             {
-                Console.WriteLine(ex.ToString());
-                return new GameState();
+                throw new Exception($"{ex.Message}\nCan't fetch state");
             }
         }
     }

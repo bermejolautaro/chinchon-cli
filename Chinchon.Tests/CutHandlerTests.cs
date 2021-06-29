@@ -27,14 +27,17 @@ namespace Chinchon.Tests
 
             var expectedOutput = "Can't cut before the second round";
             var cutHandler = new CutHandler(random);
-            var gameState = new GameState()
+            var gameState = new GameState(new Player(1), new Player(2)).With(options =>
             {
-                Turn = 1,
-                PlayerAmount = 2,
-                Player1Cards = cards
-            };
+                options.Turn = 1;
+            });
 
-            var response = cutHandler.Handle(new string[] { "cut", "1;2;3", "4;5;6", "7" }, gameState);
+            gameState = gameState.With(stateOptions =>
+            {
+                stateOptions.Player1 = gameState.Player1.With(options => options.Cards = cards);
+            });
+
+            var response = cutHandler.Handle(new string[] { "cut", "1;2;3", "4;5;6", "7" }, gameState, new ApplicationState());
             var writeAction = ((WriteAction)response.Action);
             writeAction.Output.ShouldBe(expectedOutput);
         }
@@ -58,15 +61,20 @@ namespace Chinchon.Tests
             var random = new Random(0);
 
             var cutHandler = new CutHandler(random);
-            var gameState = new GameState()
-            {
-                Turn = 3,
-                PlayerAmount = 2,
-                PlayerTurn = 1,
-                Player1Cards = cards,
-            }.WithWasCut(false);
 
-            var response = cutHandler.Handle(new string[] { "cut", "1;2;3", "4;5;6" }, gameState);
+            var gameState = new GameState(new Player(1), new Player(2)).With(options =>
+            {
+                options.Turn = 3;
+                options.PlayerTurn = 1;
+                options.WasCut = false;
+            });
+
+            gameState = gameState.With(stateOptions =>
+            {
+                stateOptions.Player1 = gameState.Player1.With(options => options.Cards = cards);
+            });
+
+            var response = cutHandler.Handle(new string[] { "cut", "1;2;3", "4;5;6" }, gameState, new ApplicationState());
             var writeAction = ((WriteAction)response.Action);
             writeAction.Output.ShouldBe(expectedOutput);
         }
@@ -75,35 +83,45 @@ namespace Chinchon.Tests
         public void Given_PlayerWith7CardsAndNoInputs_When_Cutting_Then_ReturnExpectedState()
         {
             var cards = CardsService.GetCards().Take(7);
-            var expectedState = new GameState()
+            var expectedState = new GameState(new Player(1), new Player(2)).With(options =>
             {
-                Hand = 1,
-                Turn = 4,
-                PlayerAmount = 2,
-                PlayerTurn = 2,
-                Player1Cards = cards,
-                Player1Points = 10,
-                Player2Cards = Enumerable.Empty<Card>(),
-                Player2Points = 0,
-                Deck = Enumerable.Empty<Card>(),
-                Pile = Enumerable.Empty<Card>()
-            }
-            .WithWasCut(true)
-            .WithRemainingPlayerToCut(1);
+                options.WasCut = true;
+                options.RemainingPlayersToCut = 1;
+                options.Hand = 1;
+                options.Turn = 4;
+                options.PlayerTurn = 2;
+                options.Deck = Enumerable.Empty<Card>();
+                options.Pile = Enumerable.Empty<Card>();
+            });
+
+            expectedState = expectedState.With(stateOptions =>
+            {
+                stateOptions.Player1 = expectedState.Player1.With(options =>
+                {
+                    options.Cards = cards;
+                    options.Points = 10;
+                });
+            });
 
             var random = new Random(0);
 
             var cutHandler = new CutHandler(random);
-            var gameState = new GameState()
-            {
-                Turn = 3,
-                PlayerAmount = 2,
-                PlayerTurn = 1,
-                Player1Cards = cards,
-            }.WithWasCut(true);
 
-            var response = cutHandler.Handle(new string[] { "cut" }, gameState);
-            var saveAction = (SaveAction)response.Action;
+            var gameState = new GameState(new Player(1), new Player(2)).With(options =>
+            {
+                options.WasCut = true;
+                options.Turn = 3;
+                options.PlayerTurn = 1;
+            });
+
+            gameState = gameState.With(stateOptions =>
+            {
+                stateOptions.Player1 = gameState.Player1.With(options => options.Cards = cards);
+            });
+
+
+            var response = cutHandler.Handle(new string[] { "cut" }, gameState, new ApplicationState());
+            var saveAction = (SaveStateAction)response.Action;
             saveAction.GameState.ShouldBe(expectedState);
         }
 
@@ -119,15 +137,19 @@ namespace Chinchon.Tests
             var random = new Random(0);
 
             var cutHandler = new CutHandler(random);
-            var gameState = new GameState()
+            var gameState = new GameState(new Player(1), new Player(2)).With(options =>
             {
-                Turn = 3,
-                PlayerAmount = 2,
-                PlayerTurn = 1,
-                Player1Cards = cards,
-            }.WithWasCut(true);
+                options.WasCut = true;
+                options.Turn = 3;
+                options.PlayerTurn = 1;
+            });
 
-            var response = cutHandler.Handle(new string[] { "cut", parameter }, gameState);
+            gameState = gameState.With(stateOptions =>
+            {
+                stateOptions.Player1 = gameState.Player1.With(options => options.Cards = cards);
+            });
+
+            var response = cutHandler.Handle(new string[] { "cut", parameter }, gameState, new ApplicationState());
             var writeAction = (WriteAction)response.Action;
             writeAction.Output.ShouldBe(expectedOuput);
         }
@@ -147,35 +169,46 @@ namespace Chinchon.Tests
                 new Card(SuitsEnum.Clubs, RanksEnum.King)
             };
 
-            var expectedState = new GameState()
+            var expectedState = new GameState(new Player(1), new Player(2)).With(options =>
             {
-                Hand = 1,
-                Turn = 4,
-                PlayerAmount = 2,
-                PlayerTurn = 2,
-                Player1Cards = cards,
-                Player1Points = 3,
-                Player2Cards = Enumerable.Empty<Card>(),
-                Player2Points = 0,
-                Deck = Enumerable.Empty<Card>(),
-                Pile = Enumerable.Empty<Card>()
-            }
-            .WithWasCut(true)
-            .WithRemainingPlayerToCut(1);
+                options.WasCut = true;
+                options.RemainingPlayersToCut = 1;
+                options.Hand = 1;
+                options.Turn = 4;
+                options.PlayerTurn = 2;
+                options.Deck = Enumerable.Empty<Card>();
+                options.Pile = Enumerable.Empty<Card>();
+            });
+
+            expectedState = expectedState.With(stateOptions =>
+            {
+                stateOptions.Player1 = expectedState.Player1.With(options =>
+                {
+                    options.Cards = cards;
+                    options.Points = 3;
+                });
+            });
 
             var random = new Random(0);
 
             var cutHandler = new CutHandler(random);
-            var gameState = new GameState()
+            var gameState = new GameState(new Player(1), new Player(2)).With(options =>
             {
-                Turn = 3,
-                PlayerAmount = 2,
-                PlayerTurn = 1,
-                Player1Cards = cards,
-            }.WithWasCut(false);
+                options.Turn = 3;
+                options.PlayerTurn = 1;
+                options.WasCut = false;
+            });
 
-            var response = cutHandler.Handle(new string[] { "cut", "1;2;3", "4;5;6", "8" }, gameState);
-            var saveAction = (SaveAction)response.Action;
+            gameState = gameState.With(stateOptions =>
+            {
+                stateOptions.Player1 = gameState.Player1.With(options =>
+                {
+                    options.Cards = cards;
+                });
+            });
+
+            var response = cutHandler.Handle(new string[] { "cut", "1;2;3", "4;5;6", "8" }, gameState, new ApplicationState());
+            var saveAction = (SaveStateAction)response.Action;
             saveAction.GameState.ShouldBe(expectedState);
         }
 
@@ -198,15 +231,22 @@ namespace Chinchon.Tests
             var random = new Random(0);
 
             var cutHandler = new CutHandler(random);
-            var gameState = new GameState()
+            var gameState = new GameState(new Player(1), new Player(2)).With(options =>
             {
-                Turn = 3,
-                PlayerAmount = 2,
-                PlayerTurn = 1,
-                Player1Cards = cards,
-            }.WithWasCut(true);
+                options.Turn = 3;
+                options.PlayerTurn = 1;
+                options.WasCut = true;
+            });
 
-            var response = cutHandler.Handle(new string[] { "cut", "1;2;3", "4;5;6", "8" }, gameState);
+            gameState = gameState.With(stateOptions =>
+            {
+                stateOptions.Player1 = gameState.Player1.With(options =>
+                {
+                    options.Cards = cards;
+                });
+            });
+
+            var response = cutHandler.Handle(new string[] { "cut", "1;2;3", "4;5;6", "8" }, gameState, new ApplicationState());
             var writeAction = (WriteAction)response.Action;
             writeAction.Output.ShouldBe(expectedOutput);
         }

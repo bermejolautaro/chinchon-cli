@@ -11,12 +11,18 @@ namespace Chinchon.Tests
         public void Given_EmptyGameState_When_RunningSeeCommand_Then_ShowExpectedOutput()
         {
             var expectedOuput =
-                "Player 1\r\n" +
-                "Points: 0\r\n" +
-                "Pile: \r\n";
-            var gameState = new GameState();
+                $"Lautaro\r\n" +
+                $"Points: 0\r\n" +
+                $"Pile: \r\n";
+            var gameState = new GameState(new Player(1), new Player(2));
+            var appState = new ApplicationState()
+            {
+                Player1Name = "Lautaro",
+                Player2Name = "Julieta"
+            };
+
             var seeHandler = new SeeHandler();
-            var response = seeHandler.Handle(new[] { "path", "see", "current" }, gameState);
+            var response = seeHandler.Handle(new[] { "see", "current" }, gameState, appState);
 
             (response.Action as WriteAction).Output.ShouldBe(expectedOuput);
         }

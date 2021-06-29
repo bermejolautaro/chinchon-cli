@@ -6,7 +6,7 @@ namespace Chinchon.GameHandlers
 {
     public class MoveHandler : IGameHandler
     {
-        public HandlerResponse Handle(string[] args, GameState gameState)
+        public HandlerResponse Handle(string[] args, GameState gameState, ApplicationState appState)
         {
             if (args.Length != 3)
             {
@@ -29,11 +29,11 @@ namespace Chinchon.GameHandlers
                 return new HandlerResponse() { Action = new WriteAction("Invalid index") };
             }
 
-            var card = gameState.GetCurrentPlayerCards().ElementAt(cardIndex);
+            var card = gameState.GetCurrentPlayer().Cards.ElementAt(cardIndex);
 
             return Mediator.Send(new MoveCardRequest(gameState, card, toIndex)) switch
             {
-                SuccessResult result => new HandlerResponse() { Action = new SaveAction(result.GameState) },
+                SuccessResult result => new HandlerResponse() { Action = new SaveStateAction(result.GameState, appState) },
                 ErrorResult result => new HandlerResponse() { Action = new WriteAction(result.ErrorMessage) },
             };
         }

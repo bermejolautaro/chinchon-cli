@@ -17,7 +17,7 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Chinchon.Domain2\Chinchon.Domain.csproj" />
-    <ProjectReference Include="..\Chinchon2\Chinchon.csproj" />
+    <ProjectReference Include="..\Chinchon2\Chinchon.CLI.csproj" />
   </ItemGroup>
 
 </Project>
