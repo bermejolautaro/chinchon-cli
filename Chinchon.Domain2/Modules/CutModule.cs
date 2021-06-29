@@ -36,6 +36,7 @@ namespace Chinchon.Domain.Modules
         private static bool PlayerHasTheseCards(IEnumerable<Card> cards, IEnumerable<Group> groups, Card? cardToCutWith)
         {
             var allCards = groups.SelectMany(x => x).Concat(new[] { cardToCutWith }.Where(x => !(x is null))).Cast<Card>();
+            int asd = 5;
 
             return new HashSet<Card>(allCards).IsSubsetOf(new HashSet<Card>(cards.ToList()));
         }
