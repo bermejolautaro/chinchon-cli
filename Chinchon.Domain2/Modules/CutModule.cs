@@ -37,7 +37,7 @@ namespace Chinchon.Domain.Modules
         {
             var allCards = groups.SelectMany(x => x).Concat(new[] { cardToCutWith }.Where(x => !(x is null))).Cast<Card>();
 
-            return new HashSet<Card>(cards.ToList()).SetEquals(new HashSet<Card>(allCards));
+            return new HashSet<Card>(allCards).IsSubsetOf(new HashSet<Card>(cards.ToList()));
         }
 
         private static bool AreAllDistinct(IEnumerable<Group> groups, Card? cardToCutWith)
